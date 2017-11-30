@@ -16,11 +16,14 @@ public class RfLinkMessageFactory {
     private static HashMap<String, Class> mapping = new HashMap<>();
 
     static {
-
         addMappingOfClass(RfLinkEnergyMessage.class);
         addMappingOfClass(RfLinkWindMessage.class);
         addMappingOfClass(RfLinkRainMessage.class);
-
+        addMappingOfClass(RfLinkTempMessage.class);
+        addMappingOfClass(RfLinkRFRGBControllerMessage.class);
+        addMappingOfClass(RfLinkSwitchMessage.class);
+        addMappingOfClass(RfLinkTemperatureMessage.class);
+        addMappingOfClass(RfLinkRtsMessage.class);
     }
 
     private static void addMappingOfClass(Class _class) {
@@ -38,15 +41,11 @@ public class RfLinkMessageFactory {
 
     }
 
-    public static RfLinkMessage createMessage(String packet) throws RfLinkException, RfLinkNotImpException {
-
-        final RfLinkBaseMessage message = new RfLinkBaseMessage(packet) {
-        };
-
+    public static RfLinkMessage createMessage(RfLinkBaseMessage message) throws RfLinkException, RfLinkNotImpException {
+        String packet = message.rawMessage;
         for (String key : message.values.keySet()) {
             if (mapping.containsKey(key)) {
                 try {
-
                     Class<?> cl = mapping.get(key);
                     Constructor<?> c = cl.getConstructor(String.class);
                     return (RfLinkMessage) c.newInstance(packet);
@@ -56,9 +55,11 @@ public class RfLinkMessageFactory {
                 }
             }
         }
-
         throw new RfLinkNotImpException("No message implementation found for packet " + packet.toString());
-
     }
 
+    public static RfLinkMessage createMessage(String packet) throws RfLinkException, RfLinkNotImpException {
+        return createMessage(new RfLinkBaseMessage(packet) {
+        });
+    }
 }

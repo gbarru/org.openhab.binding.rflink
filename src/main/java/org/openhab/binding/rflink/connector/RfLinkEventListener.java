@@ -16,8 +16,8 @@ package org.openhab.binding.rflink.connector;
 public interface RfLinkEventListener {
 
     /**
-     * Procedure for receive raw data from RFXCOM controller.
-     * 
+     * Procedure for receive raw data from RFLink controller.
+     *
      * @param data
      *            Received raw data.
      */
@@ -25,7 +25,7 @@ public interface RfLinkEventListener {
 
     /**
      * Procedure for receiving information fatal error.
-     * 
+     *
      * @param error
      *            Error occured.
      */

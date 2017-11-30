@@ -1,4 +1,4 @@
-# RFLink binding for OpenHAB 2.0
+﻿# RFLink binding for OpenHAB 2.0
 
 [![Build Status](https://travis-ci.org/cyrilcc/org.openhab.binding.rflink.svg?branch=master)](https://travis-ci.org/cyrilcc/org.openhab.binding.rflink)
 
@@ -20,14 +20,23 @@ The official supported devices list is available here : [http://www.nemcon.nl/bl
 RFLink binding currently supports following types of devices:
 
 * Energy
-* Wind (_to be tested_)
+* Lighting switch
 * Rain (_to be tested_)
+* RTS / Somfy blinds (Send)
+* Temperature (Receive)
+* Wind (_to be tested_)
+* X10 Switch (Send)
+* X10Secure Contact (Receive)
 
-As the project is at its very beginning, the binding does not support yet commands.
+As the project is at its very beginning, the binding does not support many devices.
 
 ## Discovery
 
-As the project is at its very beginning, the binding does not support yet discovery.
+A first version of discovery is supported, currently depending on the type of device a triggered brand/channel/button will appear in the inbox
+
+## Sending messages
+
+Sending of triggers from openhab -> rflink -> device only works for a few devices.
 
 ## Configuration
 
@@ -36,21 +45,36 @@ A manual configuration looks like
 _.things file_
 ```
 Bridge rflink:bridge:usb0 [ serialPort="COM19", baudRate=57600 ] {
-    energy myEnergy [ deviceId="Oregon CM119-0004" ]
+    energy myEnergy [ deviceId="OregonCM119-0004" ]
 }
 ```
 
 most of the time on a raspberry
 ```
 Bridge rflink:bridge:usb0 [ serialPort="/dev/ttyACM0", baudRate=57600 ] {
-    energy myEnergy [ deviceId="Oregon CM119-0004" ]
+    energy myEnergy [ deviceId="OregonCM119-0004" ]
 }
 ```
+or
+```
+Bridge rflink:bridge:usb0 [ serialPort="/dev/ttyUSB0", baudRate=57600 ] {
+    temperature myTemperature [ deviceId="OregonTemp-0123" ]
+    switch      myContact     [ deviceId="X10Secure-12ab-00" ]
+    rts         rts-123abc    [ deviceId="RTS-123abc" ]
+    switch      x10-01001a-2  [ deviceId="X10-01001a-2" ]
+}
+```
+All receiving devices must have the protocol as part of the device name (rts and x10).
+
 
 _.items file_
 ```
 Number myInstantPower "Instant Power [%d]"  <chart> (GroupA) {channel="rflink:energy:usb0:myEnergy:instantPower"}
 Number myTotalPower   "Total Power [%d]"    <chart> (GroupA) {channel="rflink:energy:usb0:myEnergy:totalUsage"}
+Number oregonTemp     "Oregon Temp [%.2f °C]"                {channel="rflink:temperature:usb0:myTemperature:temperature"}
+Rollershutter myBlind "Blind [%s]"                           {channel="rflink:rts:usb0:rts-123abc:command"}
+Switch myContact      "Contact [%s]"                         {channel="rflink:switch:usb0:myContact:contact"}
+Switch mySwitch       "X10Switch [%s]"                       {channel="rflink:switch:usb0:x10-01001a-2:command"}
 ```
 
 ## Supported Channels
@@ -87,6 +111,31 @@ Number myTotalPower   "Total Power [%d]"    <chart> (GroupA) {channel="rflink:en
 | rainRate   | Number       | Rain fall rate in millimeters per hour. |
 
 
+### Temperature
+
+
+| Channel ID  | Item Type    | Description  |
+|-------------|--------------|--------------|
+| temperature | Number       | Temperature  |
+
+
+### Switch
+
+
+| Channel ID  | Item Type    | Description  |
+|-------------|--------------|--------------|
+| command     | Switch       | Command      |
+| contact     | Contact      | Contact state|
+
+
+### RTS / Somfy
+
+
+| Channel ID  | Item Type    | Description  |
+|-------------|--------------|--------------|
+| rts         | Rollershutter| Command      |
+
+
 ## Dependencies
 
 This binding depends on the following plugins
@@ -109,21 +158,29 @@ RFLink message are very simple ';' separated strings.
 
 ### Packet structure - Received data from RF
 
+Old format:
 ```
 20;ID=9999;Name;LABEL=data;
+```
+New Format:
+```
+20;FF;Protocol;ID=9999;LABEL=data;
 ```
 
 * 20          => Node number 20 means from the RFLink Gateway to the master, 10 means from the master to the RFLink Gateway
 * ;           => field separator
-* NAME        => Device name (can be used to display in applications etc.)
+* FF          => packet sequence number
+* Protocol    => Protocol
+* ID          => ID to use in Things file
 * LABEL=data  => contains the field type and data for that field, can be present multiple times per device
+
 
 ### Examples
 
 ```
 20;6A;UPM/Esic;ID=1002;WINSP=0041;WINDIR=5A;BAT=OK;
 20;47;Cresta;ID=8001;WINDIR=0002;WINSP=0060;WINGS=0088;WINCHL=b0;
-
+20;0B;Oregon Temp;ID=0710;TEMP=00a8;BAT=LOW;
 ```
 
 The full protocol reference is available in this [archive](https://drive.google.com/open?id=0BwEYW5Q6bg_ZTDhKQXphN0ZxdEU) 
@@ -131,7 +188,11 @@ The full protocol reference is available in this [archive](https://drive.google.
 ### How to get sample messages of your Thing
 
 To get sample messages of your Thing, you can enable the DEBUG mode for this binding. 
-Add this line is your logback_debug.xml file.
+Add this line to your org.ops4j.pax.logging.cfg (Linux?) file 
+ ```
+ log4j.logger.org.openhab.binding.rflink = DEBUG
+ ```
+or add this line to your logback_debug.xml (Windows?) file
  ```
  <logger name="org.openhab.binding.rflink" level="DEBUG" />
  ```

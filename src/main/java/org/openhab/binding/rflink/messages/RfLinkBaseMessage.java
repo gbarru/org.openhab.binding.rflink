@@ -11,6 +11,7 @@ package org.openhab.binding.rflink.messages;
 import java.util.HashMap;
 import java.util.List;
 
+import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.types.State;
 
 /**
@@ -23,20 +24,13 @@ public abstract class RfLinkBaseMessage implements RfLinkMessage {
     protected final static String FIELDS_DELIMITER = ";";
     protected final static char VALUE_DELIMITER = '=';
     protected final static String STR_VALUE_DELIMITER = "=";
-    private final static String ID_DELIMITER = "-";
-
+    public final static String ID_DELIMITER = "-";
     private final static String NODE_NUMBER_FROM_GATEWAY = "20";
-
     private final static int MINIMAL_SIZE_MESSAGE = 5;
-
     public String rawMessage;
-
     public byte seqNbr = 0;
-
     private String deviceName;
-
     private String deviceId;
-
     protected HashMap<String, String> values = new HashMap<>();
 
     public RfLinkBaseMessage() {
@@ -45,6 +39,11 @@ public abstract class RfLinkBaseMessage implements RfLinkMessage {
 
     public RfLinkBaseMessage(String data) {
         encodeMessage(data);
+    }
+
+    @Override
+    public ThingTypeUID getThingType() {
+        return null;
     }
 
     @Override
@@ -62,7 +61,10 @@ public abstract class RfLinkBaseMessage implements RfLinkMessage {
             if (NODE_NUMBER_FROM_GATEWAY.equals(elements[0])) {
 
                 seqNbr = (byte) Integer.parseInt(elements[1], 16);
-                deviceName = elements[2];
+
+                // Fix for "UID segment 'Oregon Temp_0710' contains invalid characters. Each segment of the UID must
+                // match the pattern [A-Za-z0-9_-]*."
+                deviceName = elements[2].replaceAll("[^A-Za-z0-9_-]", "");
                 deviceId = elements[3].split(STR_VALUE_DELIMITER)[1];
 
                 // Raw values are stored, and will be decoded by sub implementations
@@ -99,6 +101,11 @@ public abstract class RfLinkBaseMessage implements RfLinkMessage {
     @Override
     public String getDeviceId() {
         return deviceName + ID_DELIMITER + deviceId;
+    }
+
+    @Override
+    public String getDeviceName() {
+        return deviceName;
     }
 
     @Override

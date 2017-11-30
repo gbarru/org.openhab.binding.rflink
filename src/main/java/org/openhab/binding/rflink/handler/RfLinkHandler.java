@@ -9,11 +9,11 @@ package org.openhab.binding.rflink.handler;
 
 import java.util.HashMap;
 
-import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
+import org.eclipse.smarthome.core.thing.ThingStatusInfo;
 import org.eclipse.smarthome.core.thing.ThingUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
  * sent to one of the channels.
  *
  * @author Cyril Cauchois - Initial contribution
+ * @author John Jore - Added initial support to send commands to devices
  */
 public class RfLinkHandler extends BaseThingHandler implements DeviceMessageListener {
 
@@ -50,59 +51,79 @@ public class RfLinkHandler extends BaseThingHandler implements DeviceMessageList
 
         if (bridgeHandler != null) {
 
-            // TODO forge a message to be transmitted
+            // there must be a better way?
+            String[] tmp = channelUID.getAsString().split(":")[3].split("-");
+            String protocol = tmp[0];
 
-            // bridgeHandler.sendMessage(msg);
+            // RfLink needs to know which protocol to use. Different devices have different formats.
+            String msg = null;
+            switch (protocol.toUpperCase()) {
+                case "RTS":
+                    msg = protocol + ";" + tmp[1] + ";0;" + command + ";";
+                    break;
+                case "X10":
+                    msg = protocol + ";" + tmp[1] + ";" + tmp[2] + ";" + command + ";";
+                    break;
+            }
 
-            logger.warn("RFLink doesn't support transmitting for channel '{}' yet", channelUID.getId());
-
+            try {
+                if (msg != null) {
+                    bridgeHandler.sendMessage(msg.toUpperCase());
+                }
+            } catch (RfLinkException e) {
+                e.printStackTrace();
+            }
         }
-
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void initialize() {
         config = getConfigAs(RfLinkDeviceConfiguration.class);
 
-        logger.debug("Initialized RFLink device handler for {}, deviceId={}", getThing().getUID(), config.deviceId);
+        logger.debug("Initializing thing {}, deviceId={}", getThing().getUID(), config.deviceId);
 
-        initializeBridge(getBridge().getHandler(), getBridge());
+        initializeBridge((getBridge() == null) ? null : getBridge().getHandler(),
+                (getBridge() == null) ? null : getBridge().getStatus());
     }
 
     @Override
-    public void bridgeHandlerInitialized(ThingHandler thingHandler, Bridge bridge) {
-        initializeBridge(thingHandler, bridge);
+    public void bridgeStatusChanged(ThingStatusInfo bridgeStatusInfo) {
+        logger.debug("bridgeStatusChanged {} for thing {}", bridgeStatusInfo, getThing().getUID());
+        initializeBridge((getBridge() == null) ? null : getBridge().getHandler(), bridgeStatusInfo.getStatus());
     }
 
-    private void initializeBridge(ThingHandler thingHandler, Bridge bridge) {
-        logger.debug("RFLink Bridge initialized");
+    private void initializeBridge(ThingHandler thingHandler, ThingStatus bridgeStatus) {
+        logger.debug("initializeBridge {} for thing {}", bridgeStatus, getThing().getUID());
 
-        if (thingHandler != null && bridge != null) {
+        config = getConfigAs(RfLinkDeviceConfiguration.class);
+        if (config.deviceId == null) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "RFLink device missing deviceId");
+        } else if (thingHandler != null && bridgeStatus != null) {
             bridgeHandler = (RfLinkBridgeHandler) thingHandler;
             bridgeHandler.registerDeviceStatusListener(this);
 
-            if (bridge.getStatus() == ThingStatus.ONLINE) {
+            if (bridgeStatus == ThingStatus.ONLINE) {
                 updateStatus(ThingStatus.ONLINE);
             } else {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_OFFLINE);
             }
+        } else {
+            updateStatus(ThingStatus.OFFLINE);
         }
 
-        super.bridgeHandlerInitialized(thingHandler, bridge);
-    }
-
-    @Override
-    public void bridgeHandlerDisposed(ThingHandler thingHandler, Bridge bridge) {
-        logger.debug("RFLink Bridge disposed");
-        if (bridgeHandler != null) {
-            bridgeHandler.unregisterDeviceStatusListener(this);
-        }
-        bridgeHandler = null;
+        // super.bridgeHandlerInitialized(thingHandler, bridge);
     }
 
     @Override
     public void dispose() {
         logger.debug("Thing {} disposed.", getThing().getUID());
+        if (bridgeHandler != null) {
+            bridgeHandler.unregisterDeviceStatusListener(this);
+        }
+        bridgeHandler = null;
         super.dispose();
     }
 
@@ -111,9 +132,10 @@ public class RfLinkHandler extends BaseThingHandler implements DeviceMessageList
 
         try {
             String id = message.getDeviceId();
-            logger.debug("Message fom bridge " + bridge.toString() + " from device [" + id + "]");
+            logger.debug(
+                    "Message fom bridge " + bridge.toString() + " from device [" + id + "], attempting to match {}",
+                    config.deviceId);
             if (config.deviceId.equals(id)) {
-
                 updateStatus(ThingStatus.ONLINE);
 
                 HashMap<String, State> map = message.getStates();
@@ -128,6 +150,5 @@ public class RfLinkHandler extends BaseThingHandler implements DeviceMessageList
 
             logger.error("Error occured during message receiving", e);
         }
-
     }
 }
