@@ -163,3 +163,4 @@ public class RfLinkSerialConnector implements RfLinkConnectorInterface, SerialPo
         }
     }
 }
+
