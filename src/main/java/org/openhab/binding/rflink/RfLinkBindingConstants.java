@@ -73,11 +73,16 @@ public class RfLinkBindingConstants {
     public final static String CHANNEL_CONTACT = "contact";
     public final static String CHANNEL_VOLTAGE = "voltage";
     public final static String CHANNEL_SET_POINT = "setpoint";
+    public final static String CHANNEL_ID = "id";
+    public final static String CHANNEL_SWITCH = "switch_number";
+    public final static String CHANNEL_CMD = "cmd";
 
     // List of all Thing Type UIDs
     public final static ThingTypeUID THING_TYPE_SWITCH = new ThingTypeUID(BINDING_ID, "switch");
     public final static ThingTypeUID THING_TYPE_ENERGY = new ThingTypeUID(BINDING_ID, "energy");
     public final static ThingTypeUID THING_TYPE_WIND = new ThingTypeUID(BINDING_ID, "wind");
+    public final static ThingTypeUID THING_TYPE_TEMP = new ThingTypeUID(BINDING_ID, "temperature");
+    public final static ThingTypeUID THING_TYPE_RGB = new ThingTypeUID(BINDING_ID, "rgb_controller");
     public final static ThingTypeUID THING_TYPE_RAIN = new ThingTypeUID(BINDING_ID, "rain");
     public final static ThingTypeUID THING_TYPE_TEMPERATURE = new ThingTypeUID(BINDING_ID, "temperature");
     public final static ThingTypeUID THING_TYPE_HUMIDITY = new ThingTypeUID(BINDING_ID, "humidity");
@@ -86,6 +91,6 @@ public class RfLinkBindingConstants {
 
     // Presents all supported Thing types by RFLink binding.
     public final static Set<ThingTypeUID> SUPPORTED_DEVICE_THING_TYPES_UIDS = ImmutableSet.of(THING_TYPE_ENERGY,
-            THING_TYPE_WIND, THING_TYPE_SWITCH, THING_TYPE_RAIN, THING_TYPE_TEMPERATURE, THING_TYPE_RTS, THING_TYPE_HUMIDITY,
+            THING_TYPE_WIND, THING_TYPE_TEMP, THING_TYPE_RGB, THING_TYPE_SWITCH, THING_TYPE_RAIN, THING_TYPE_TEMPERATURE, THING_TYPE_RTS, THING_TYPE_HUMIDITY,
             THING_TYPE_OREGONTEMPHYGRO);
 }

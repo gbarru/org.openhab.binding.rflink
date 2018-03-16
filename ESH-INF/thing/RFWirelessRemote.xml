@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="rflink"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0 http://eclipse.org/smarthome/schemas/thing-description-1.0.0.xsd">
+
+	<thing-type id="RF_RGB_Led">
+		
+		<label>RFLink RGB Led Controller</label>
+		<description>A RGB Led Controller device. EV1527</description>
+
+		<channels>
+			<channel id="Turn_On-Standby" typeId="switch" />
+			<channel id="Mode_up" typeId="mode" />
+			<channel id="Mode_down" typeId="mode" />
+			<channel id="Speed_up" typeId="speed" />
+			<channel id="Speed_down" typeId="speed" />
+			<channel id="Color_up" typeId="color" />
+			<channel id="color_down" typeId="color" />
+			<channel id="White" typeId="color" />
+			<channel id="red" typeId="color" />
+			<channel id="green" typeId="color" />
+			<channel id="blue" typeId="color" />
+			<channel id="yellow" typeId="color" />
+			<channel id="cyan" typeId="color" />
+			<channel id="pink" typeId="color" />
+			<channel id="Bright_up" typeId="bright" />
+			<channel id="Bright_down" typeId="bright" />
+		</channels>
+	</thing-type>
+
+</thing:thing-descriptions>
