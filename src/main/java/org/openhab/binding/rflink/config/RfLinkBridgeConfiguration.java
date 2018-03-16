@@ -1,5 +1,6 @@
 /**
- * Copyright (c) 2010-2015 openHAB UG (haftungsbeschraenkt) and others.
+ * Copyright (c) 2010-2017 by the respective copyright holders.
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -11,6 +12,7 @@ package org.openhab.binding.rflink.config;
  * Configuration class for {@link RflinkBinding} device.
  *
  * @author Cyril Cauchois - Initial contribution
+ * @author Marvyn Zalewski - added disableDiscovery Configuration
  */
 public class RfLinkBridgeConfiguration {
 
@@ -22,4 +24,7 @@ public class RfLinkBridgeConfiguration {
 
     // Serial port baud rate
     public int baudRate;
+
+    // Prevent unknown devices from being added to the inbox
+    public boolean disableDiscovery;
 }

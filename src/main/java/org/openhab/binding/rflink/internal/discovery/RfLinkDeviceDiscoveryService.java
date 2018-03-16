@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-2016 by the respective copyright holders.
+ * Copyright (c) 2010-2017 by the respective copyright holders.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -30,10 +30,11 @@ import org.slf4j.LoggerFactory;
  *
  * @author Pauli Anttila - Initial contribution
  * @author Daan Sieben - Modified for RfLink
+ * @author Marvyn Zalewski - Added the ability to ignore discoveries
  */
 public class RfLinkDeviceDiscoveryService extends AbstractDiscoveryService implements DeviceMessageListener {
 
-    private final static Logger logger = LoggerFactory.getLogger(RfLinkDeviceDiscoveryService.class);
+    private final Logger logger = LoggerFactory.getLogger(RfLinkDeviceDiscoveryService.class);
 
     private RfLinkBridgeHandler bridgeHandler;
 
@@ -63,7 +64,7 @@ public class RfLinkDeviceDiscoveryService extends AbstractDiscoveryService imple
 
     @Override
     public void onDeviceMessageReceived(ThingUID bridge, RfLinkMessage message) {
-        logger.trace("Received: bridge: {} message: {}", bridge, message);
+        logger.debug("Received: bridge: {} message: {}", bridge, message);
 
         try {
             RfLinkMessage msg = RfLinkMessageFactory.createMessage((RfLinkBaseMessage) message);
@@ -72,11 +73,15 @@ public class RfLinkDeviceDiscoveryService extends AbstractDiscoveryService imple
             ThingTypeUID uid = msg.getThingType();
             ThingUID thingUID = new ThingUID(uid, bridge, id.replace(RfLinkBaseMessage.ID_DELIMITER, "_"));
             if (thingUID != null) {
-                logger.trace("Adding new RfLink {} with id '{}' to smarthome inbox", thingUID, id);
-                String deviceType = msg.getDeviceName();
-                DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingUID).withLabel(deviceType)
-                        .withProperty(RfLinkBindingConstants.DEVICE_ID, msg.getDeviceId()).withBridge(bridge).build();
-                thingDiscovered(discoveryResult);
+                if (!bridgeHandler.getConfiguration().disableDiscovery) {
+                    logger.trace("Adding new RfLink {} with id '{}' to smarthome inbox", thingUID, id);
+                    String deviceType = msg.getDeviceName();
+                    DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingUID).withLabel(deviceType)
+                            .withProperty(RfLinkBindingConstants.DEVICE_ID, msg.getDeviceId()).withBridge(bridge).build();
+                    thingDiscovered(discoveryResult);
+                } else {
+                    logger.trace("Ignoring RfLink {} with id '{}' - discovery disabled", thingUID, id);
+                }
             }
         } catch (Exception e) {
             logger.debug("Error occured during device discovery", e);

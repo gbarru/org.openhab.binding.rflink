@@ -24,8 +24,11 @@ RFLink binding currently supports following types of devices:
 * Rain (_to be tested_)
 * RTS / Somfy blinds (Send)
 * Temperature (Receive)
+* Humidity (Receive) 
+* Temperature and Humidity (Receive) 
 * Wind (_to be tested_)
 * X10 Switch (Send)
+* AB400D Elro Switch (Send)
 * X10Secure Contact (Receive)
 
 As the project is at its very beginning, the binding does not support many devices.
@@ -40,6 +43,14 @@ Sending of triggers from openhab -> rflink -> device only works for a few device
 
 ## Configuration
 
+| Thing Config | Type    | Description  | Example |
+|------------|--------------|--------------|--------------|
+| serialPort | String | Path to Device | "/dev/tty.wchusbserial1410" |
+| baudRate | Integer | baudRate of the Gateway | 57600 |
+| disableDiscovery | Boolean | Enable or disable device Discovery | true |
+
+
+
 A manual configuration looks like
 
 _.things file_
@@ -51,7 +62,7 @@ Bridge rflink:bridge:usb0 [ serialPort="COM19", baudRate=57600 ] {
 
 most of the time on a raspberry
 ```
-Bridge rflink:bridge:usb0 [ serialPort="/dev/ttyACM0", baudRate=57600 ] {
+Bridge rflink:bridge:usb0 [ serialPort="/dev/ttyACM0", baudRate=57600, disableDiscovery=true ] {
     energy myEnergy [ deviceId="OregonCM119-0004" ]
 }
 ```
@@ -62,9 +73,12 @@ Bridge rflink:bridge:usb0 [ serialPort="/dev/ttyUSB0", baudRate=57600 ] {
     switch      myContact     [ deviceId="X10Secure-12ab-00" ]
     rts         rts-123abc    [ deviceId="RTS-123abc" ]
     switch      x10-01001a-2  [ deviceId="X10-01001a-2" ]
+    switch      AB400D-52-2   [ deviceId="AB400D-52-2" ]
+    humidity    myHumidity    [ deviceId="AuriolV3-A901" ]
+    OregonTempHygro myOregon  [ deviceId="OregonTempHygro-2D60" ]
 }
 ```
-All receiving devices must have the protocol as part of the device name (rts and x10).
+All receiving devices must have the protocol as part of the device name (rts, x10 and AB400D).
 
 
 _.items file_
@@ -72,9 +86,16 @@ _.items file_
 Number myInstantPower "Instant Power [%d]"  <chart> (GroupA) {channel="rflink:energy:usb0:myEnergy:instantPower"}
 Number myTotalPower   "Total Power [%d]"    <chart> (GroupA) {channel="rflink:energy:usb0:myEnergy:totalUsage"}
 Number oregonTemp     "Oregon Temp [%.2f °C]"                {channel="rflink:temperature:usb0:myTemperature:temperature"}
+Number auriolHumidity "Humidity [%d %%]"                     {channel="rflink:humidity:usb0:myHumidity:humidity"}
 Rollershutter myBlind "Blind [%s]"                           {channel="rflink:rts:usb0:rts-123abc:command"}
 Switch myContact      "Contact [%s]"                         {channel="rflink:switch:usb0:myContact:contact"}
 Switch mySwitch       "X10Switch [%s]"                       {channel="rflink:switch:usb0:x10-01001a-2:command"}
+Switch myElroSwitch   "AB400DSwitch [%s]"                    {channel="rflink:switch:usb0:AB400D-52-2:command"}
+Number temp_outdoor   "Temperature [%.1f °C]"		     {channel="rflink:OregonTempHygro:usb0:myOregon:temperature"}
+Number hum_out        "Humidity [%d %%]"		     {channel="rflink:OregonTempHygro:usb0:myOregon:humidity"}
+String hstatus_out    "Humidity status [%s]"                 {channel="rflink:OregonTempHygro:usb0:myOregon:humidityStatus" }
+Switch low_bat_out    "Low battery [%s]"                     {channel="rflink:OregonTempHygro:usb0:myOregon:lowBattery" }
+
 ```
 
 ## Supported Channels
@@ -118,6 +139,32 @@ Switch mySwitch       "X10Switch [%s]"                       {channel="rflink:sw
 |-------------|--------------|--------------|
 | temperature | Number       | Temperature  |
 
+
+### Humidity
+
+
+| Channel ID  | Item Type    | Description  |
+|-------------|--------------|--------------|
+|   humidity  |   Number     |   Humidity   |
+
+
+### OregonTempHygro
+
+
+| Channel ID  | Item Type    | Description  |
+|----------------|--------------|--------------|
+| temperature    | Number       | Temperature  |
+| humidity       | Number       |   Humidity   |
+| humidityStatus | String       | Humidity status  |
+| lowBattery     | Switch       |   Low battery status   |
+
+Humidity status: 
+```
+Normal (0)
+Comfort (1)
+Dry (2)
+Wet (3)
+```
 
 ### Switch
 
@@ -181,6 +228,7 @@ New Format:
 20;6A;UPM/Esic;ID=1002;WINSP=0041;WINDIR=5A;BAT=OK;
 20;47;Cresta;ID=8001;WINDIR=0002;WINSP=0060;WINGS=0088;WINCHL=b0;
 20;0B;Oregon Temp;ID=0710;TEMP=00a8;BAT=LOW;
+20;EB;Oregon TempHygro;ID=2D50;TEMP=0013;HUM=77;HSTATUS=3;BAT=LOW;
 ```
 
 The full protocol reference is available in this [archive](https://drive.google.com/open?id=0BwEYW5Q6bg_ZTDhKQXphN0ZxdEU) 
@@ -196,10 +244,15 @@ or add this line to your logback_debug.xml (Windows?) file
  ```
  <logger name="org.openhab.binding.rflink" level="DEBUG" />
  ```
+or execute the following command in your Karaf Shell for temporary debug log
+ ```
+ log:set DEBUG org.openhab.binding.rflink
+ ```
+
 
 Or you can use the Serial Monitor of your arduino IDE.
 
-Or you can use the RFLinkLoader application. [See how](http://www.nemcon.nl/blog2/2015/07/cc).
+Or you can use the RFLinkLoader application. [See how](http://www.rflink.nl/blog2/development).
 
 ### Add your code
 
@@ -214,5 +267,7 @@ Or you can use the RFLinkLoader application. [See how](http://www.nemcon.nl/blog
 
 ### How to package your binding
 
-In Eclipse IDE, right click on the pom.xml file, then "Run As", and "Maven Install" 
-
+In Eclipse IDE, right click on the pom.xml file, then "Run As", and "Maven Install"  or execute
+```
+ mvn package
+```
